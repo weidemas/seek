@@ -1,3 +1,4 @@
+<%= image(:galaxy_logo) %>
 <h1>Galaxy output</h1>
 
 <h2>files</h2>
@@ -5,6 +6,12 @@
 <ul>
   <% @filepaths.each do |path| %>
     <li><%= path %></li>
+  <% end %>
+</ul>
+
+<ul>
+  <% @filenames.each do |name| %>
+    <li><%= name %></li>
   <% end %>
 </ul>
 

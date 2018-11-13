@@ -21,6 +21,7 @@ class AssaysController < ApplicationController
   def run_with_galaxy
     # get each data file path, and strip out any blanks
     @filepaths = @assay.data_files.collect(&:content_blob).collect(&:filepath).compact
+    @filenames = @assay.data_files.collect(&:content_blob).collect(&:original_filename).compact
 
     # setup command to execute ls -lh for all paths
     line = Terrapin::CommandLine.new("ls -lh", "#{@filepaths.join(' ')}")
