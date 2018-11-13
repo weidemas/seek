@@ -6,7 +6,7 @@ class AssaysController < ApplicationController
   before_filter :assays_enabled?
 
   before_filter :find_assets, :only=>[:index]
-  before_filter :find_and_authorize_requested_item, :only=>[:edit, :update, :destroy, :show,:new_object_based_on_existing_one]
+  before_filter :find_and_authorize_requested_item, :only=>[:edit, :update, :destroy, :show, :new_object_based_on_existing_one, :run_with_galaxy]
 
   #project_membership_required_appended is an alias to project_membership_required, but is necessary to include the actions
   #defined in the application controller
@@ -17,6 +17,21 @@ class AssaysController < ApplicationController
   include Seek::BreadCrumbs
 
   include Seek::IsaGraphExtensions
+
+  def run_with_galaxy
+    # get each data file path, and strip out any blanks
+    @filepaths = @assay.data_files.collect(&:content_blob).collect(&:filepath).compact
+
+    # setup command to execute ls -lh for all paths
+    line = Terrapin::CommandLine.new("ls -lh", "#{@filepaths.join(' ')}")
+
+    #execute the command and get the output
+    @cmd_output = line.run
+
+    respond_to do |format|
+      format.html
+    end
+  end
 
   def new_object_based_on_existing_one
     @existing_assay =  Assay.find(params[:id])
