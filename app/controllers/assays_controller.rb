@@ -19,12 +19,21 @@ class AssaysController < ApplicationController
   include Seek::IsaGraphExtensions
 
   def run_with_galaxy
+    # Fill in all empty strings and place the galaxyseek.py script in the root of the project before running the Galaxy function.
+
     # get each data file path, and strip out any blanks
     @filepaths = @assay.data_files.collect(&:content_blob).collect(&:filepath).compact
+    # get the original filenames
     @filenames = @assay.data_files.collect(&:content_blob).collect(&:original_filename).compact
+    # Add a Galaxy server URL
+    @galaxyurl = ""
+    # Add a Galaxy API key
+    @galaxyapi = ""
+    # Add a Galaxy workflow id
+    @workflowid = ""
 
-    # setup command to execute ls -lh for all paths
-    line = Terrapin::CommandLine.new("ls -lh", "#{@filepaths.join(' ')}")
+    # command to run the galaxy python script
+    line = Terrapin::CommandLine.new("python3 galaxyseek.py #{@filepaths.join(',')} '#{@assay.title}' '#{@galaxyurl}' '#{@galaxyapi}' '#{@filenames.join(',')}' '#{@workflowid}'")
 
     #execute the command and get the output
     @cmd_output = line.run
