@@ -8,6 +8,7 @@
             <%= button_link_to("Add #{t('model')}",'add',new_model_path("assay_ids[]":item.id)) %>
         <% end %>
     <% end %>
+    <%= button_link_to('Run with Galaxy','galaxy_button',run_with_galaxy_assay_path(item), method: :post, icon_options:{height:'18px'}) %>
 <% end %>
 <% if show_nels_button?(item) %>
     <%= button_link_to('Add data from NeLS', 'add', assay_nels_path(item.id)) %>

@@ -367,6 +367,7 @@ SEEK::Application.routes.draw do
       get :published
       get :new_object_based_on_existing_one
       get :isa_children
+      post :run_with_galaxy
     end
     resources :people,:projects,:investigations,:samples, :studies,:models,:sops,:data_files,:publications, :documents,:strains, :organisms, :only=>[:index]
   end
