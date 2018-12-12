@@ -169,6 +169,7 @@ group :test do
   gem 'sunspot_matchers'
   gem 'database_cleaner'
   gem 'vcr', '~> 2.9'
+  gem 'rails-erd'
 end
 
 group :test, :development do

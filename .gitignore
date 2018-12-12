@@ -5,6 +5,7 @@ syntax: glob
 data.sql
 reset-db.sh
 rails_best_practices_output.html
+erd.pdf
 
 db/*.sqlite3
 db/*.sqlite3-journal
