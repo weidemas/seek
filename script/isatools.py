@@ -39,9 +39,18 @@ def read_seek_object (url):
     
     json = r.json()
     
-    merged_dict = {**json['data']['attributes'], **json['data']['relationships'], **json['data']['meta'], 'id' : json['data']['id']}
+    merged_dict = {**json['data']['attributes'],
+                   **json['data']['relationships'],
+                   **json['data']['meta'],
+                   'id' : json['data']['id']}
     
-    return merged_dict
+    return url, merged_dict
+
+def try_set_attr (object, field_name, seek_dict, seek_field_name) :
+  try:
+    setattr(object, field_name, seek_dict['seek_field_name'])
+  except KeyError:
+    pass
 
 def translate_investigation(seek_investigation_url):
   
@@ -49,7 +58,7 @@ def translate_investigation(seek_investigation_url):
     
     base_url = seek_investigation_url.split('/investigations')[0]
 
-    seek_investigation = read_seek_object (seek_investigation_url)
+    actual_url, seek_investigation = read_seek_object (seek_investigation_url)
     
     investigation = Investigation()
     
@@ -64,7 +73,10 @@ def translate_investigation(seek_investigation_url):
     # ontologySourceReferences not yet mapped
     
     # publications not yet mapped
-    
+    for seek_publication_ref in seek_investigation['publications']['data']:
+      publication = translate_publication (seek_publication_ref)
+      investigation.publications.append(publication)
+     
     # map people from people
     for seek_person_ref in seek_investigation['people']['data']:
       person = translate_person (seek_person_ref)
@@ -75,14 +87,14 @@ def translate_investigation(seek_investigation_url):
       study = translate_study (seek_study_ref)
       investigation.studies.append(study)
     
-    # comments not yet mapped
+    # comments are not mapped
 
     return investigation
 
 def translate_study(seek_study_url):
   
     
-    seek_study = read_seek_object (seek_study_url)
+    actual_url, seek_study = read_seek_object (seek_study_url)
 
     study = Study()
     
@@ -95,8 +107,13 @@ def translate_study(seek_study_url):
     study.public_release_date = study.submission_date
     
     # publications not yet mapped
-    
-    # people not yet mapped
+    for seek_publication_ref in seek_study['publications']['data']:
+      publication = translate_publication (seek_publication_ref)
+      study.publications.append(publication)
+     
+    for seek_person_ref in seek_study['people']['data']:
+      person = translate_person (seek_person_ref)
+      study.contacts.append(person)
        
     # studyDesignDescriptors not yet mapped
 
@@ -117,13 +134,13 @@ def translate_study(seek_study_url):
 
     # unitCategories not yet mapped
 
-    # comments not yet mapped
+    # comments are not mapped
 
     return study
 
 def translate_assay(seek_assay_url):
   
-    seek_assay = read_seek_object (seek_assay_url)
+    actual_url, seek_assay = read_seek_object (seek_assay_url)
 
     assay = Assay()
      
@@ -132,7 +149,7 @@ def translate_assay(seek_assay_url):
     assay.description = seek_assay['description']
     
        
-    # comments not yet mapped
+    # comments are not mapped
        
     # filename not yet mapped
        
@@ -154,14 +171,8 @@ def translate_assay(seek_assay_url):
        
     return assay
 
-def try_set_attr (object, field_name, seek_dict, seek_field_name) :
-  try:
-    object.setattr(object, field_name, seek_dict['seek_field_name'])
-  except KeyError:
-    pass
-
 def translate_person(seek_person_url):
-  seek_person = read_seek_object (seek_person_url)
+  actual_url, seek_person = read_seek_object (seek_person_url)
   
   person = Person()
   
@@ -171,7 +182,7 @@ def translate_person(seek_person_url):
   person.first_name = seek_person['first_name']
   # midInitials is not mapped
   # eMail is not mapped
-  # person.phone = seek_person['data']['attributes']['phone']
+  person.phone = seek_person.get('phone', '')
   # fax is not mapped
   # address is not mapped
   
@@ -179,14 +190,30 @@ def translate_person(seek_person_url):
   
   # roles are not yet mapped
   
-  # comments not yet mapped
+  # comments are not mapped
   
   return person
+
+def translate_publication(seek_publication_url):
+  actual_url, seek_publication = read_seek_object (seek_publication_url)
+  
+  publication = Publication()
+  
+  # comments are not mapped
+  
+  publication.pubMedID = seek_publication.get('pubmed_id', '')
+  publication.doi = seek_publication.get('doi', '')
+  publication.author_list = ', '.join (seek_publication.get('authors', []))
+  
+  publication.title = seek_publication['title']
+  # status not yet mapped
+   
+  return publication
 
 session = requests.Session()
 session.headers.update(headers)
 
-investigation = translate_investigation('https://fairdomhub.org/investigations/255')
+investigation = translate_investigation('https://fairdomhub.org/investigations/289')
 
 json_string = json.dumps(investigation,
                          cls=ISAJSONEncoder,
