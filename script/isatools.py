@@ -19,6 +19,9 @@ import json
 import string
 import getpass
 
+EXPERIMENTAL_TYPE_URL = 'http://jermontology.org/ontology/JERMOntology'
+TECHNOLOGY_TYPE_URL = 'http://jermontology.org/ontology/JERMOntology'
+
 headers = {"Content-type": "application/vnd.api+json",
            "Accept": "application/vnd.api+json",
            "Accept-Charset": "ISO-8859-1"}
@@ -56,9 +59,16 @@ def translate_investigation(seek_investigation_url):
   
     global base_url
     
+    global object_map
+    
     base_url = seek_investigation_url.split('/investigations')[0]
-
+    
+    object_map = {}
+    
     actual_url, seek_investigation = read_seek_object (seek_investigation_url)
+    
+    if actual_url in object_map:
+      return object_map [actual_url]
     
     investigation = Investigation()
     
@@ -70,9 +80,13 @@ def translate_investigation(seek_investigation_url):
     investigation.submission_date = seek_investigation['created'].split('T')[0]
     investigation.public_release_date = investigation.submission_date
     
-    # ontologySourceReferences not yet mapped
+    # ontologySourceReferences pre-defined
+    investigation.add_ontology_source_reference (name = 'experimental_type', file=EXPERIMENTAL_TYPE_URL)
+    object_map [EXPERIMENTAL_TYPE_URL] = investigation.get_ontology_source_reference('experimental_type')
+    investigation.add_ontology_source_reference (name = 'technology_type', file=TECHNOLOGY_TYPE_URL)
+    object_map[TECHNOLOGY_TYPE_URL] = investigation.get_ontology_source_reference('technology_type')
     
-    # publications not yet mapped
+    # map publications from publications
     for seek_publication_ref in seek_investigation['publications']['data']:
       publication = translate_publication (seek_publication_ref)
       investigation.publications.append(publication)
@@ -88,6 +102,8 @@ def translate_investigation(seek_investigation_url):
       investigation.studies.append(study)
     
     # comments are not mapped
+    
+    object_map [actual_url] = investigation
 
     return investigation
 
@@ -95,6 +111,9 @@ def translate_study(seek_study_url):
   
     
     actual_url, seek_study = read_seek_object (seek_study_url)
+
+    if actual_url in object_map:
+      return object_map [actual_url]
 
     study = Study()
     
@@ -106,7 +125,7 @@ def translate_study(seek_study_url):
     study.submission_date = seek_study['created'].split('T')[0]
     study.public_release_date = study.submission_date
     
-    # publications not yet mapped
+    # map publications from publications
     for seek_publication_ref in seek_study['publications']['data']:
       publication = translate_publication (seek_publication_ref)
       study.publications.append(publication)
@@ -117,8 +136,6 @@ def translate_study(seek_study_url):
        
     # studyDesignDescriptors not yet mapped
 
-    # protocols not yet mapped
-
     # materials not yet mapped
     
     # processSequence not yet mapped
@@ -128,6 +145,14 @@ def translate_study(seek_study_url):
       assay = translate_assay (seek_assay_ref)
       study.assays.append(assay)
 
+    # map protocols from the sops referenced by the assays
+    # must be done after mapping of assays
+    for seek_assay_ref in seek_study['assays']['data']:
+      u, seek_assay = read_seek_object (seek_assay_ref)
+      for seek_sop_ref in seek_assay['sops']['data']:
+        protocol = translate_sop (seek_sop_ref)
+        study.protocols.append(protocol)
+  
     # factors not yet mapped
 
     # characteristicCategories not yet mapped
@@ -136,11 +161,22 @@ def translate_study(seek_study_url):
 
     # comments are not mapped
 
+    object_map [actual_url] = study
+
     return study
+
+def translate_annotation(seek_type, ontology_url):
+  source = object_map[ontology_url]
+  seek_term = seek_type['uri'].split('#')[1]
+  annotation = OntologyAnnotation(term=seek_term, term_source=source, term_accession=seek_type['uri'])
+  return annotation
 
 def translate_assay(seek_assay_url):
   
     actual_url, seek_assay = read_seek_object (seek_assay_url)
+
+    if actual_url in object_map:
+      return object_map [actual_url]
 
     assay = Assay()
      
@@ -148,14 +184,17 @@ def translate_assay(seek_assay_url):
     
     assay.description = seek_assay['description']
     
-       
     # comments are not mapped
        
     # filename not yet mapped
        
-    # measurementType not yet mapped
+    # mao measurementType from assay_type
+    if seek_assay['assay_type']['uri']:
+      assay.measurement_type = translate_annotation (seek_assay['assay_type'], EXPERIMENTAL_TYPE_URL)
        
-    # technologyType not yet mapped
+    # map technologyType from technology_type
+    if seek_assay['technology_type']['uri']:
+      assay.technology_type = translate_annotation (seek_assay['technology_type'], TECHNOLOGY_TYPE_URL)
        
     # technologyPlatform not yet mapped
        
@@ -169,11 +208,16 @@ def translate_assay(seek_assay_url):
     
     # processSequence not yet mapped
        
+    object_map [actual_url] = assay
+
     return assay
 
 def translate_person(seek_person_url):
   actual_url, seek_person = read_seek_object (seek_person_url)
   
+  if actual_url in object_map:
+    return object_map [actual_url]
+
   person = Person()
   
   # @id not yet mapped
@@ -192,11 +236,18 @@ def translate_person(seek_person_url):
   
   # comments are not mapped
   
+  object_map [actual_url] = person
+  
+  print ('added ', actual_url)
+
   return person
 
 def translate_publication(seek_publication_url):
   actual_url, seek_publication = read_seek_object (seek_publication_url)
   
+  if actual_url in object_map:
+    return object_map [actual_url]
+
   publication = Publication()
   
   # comments are not mapped
@@ -208,12 +259,42 @@ def translate_publication(seek_publication_url):
   publication.title = seek_publication['title']
   # status not yet mapped
    
+  object_map [actual_url] = publication
+
   return publication
+
+def translate_sop(seek_sop_url):
+  actual_url, seek_sop = read_seek_object (seek_sop_url)
+  
+  if actual_url in object_map:
+    return object_map [actual_url]
+
+  protocol = Protocol()
+  
+  # comments are not mapped
+  
+  protocol.name = seek_sop['title']
+  
+  # protocol_type not yet mapped
+  
+  protocol.description = seek_sop['description']
+  
+  # uri cannot be mapped
+  
+  protocol.version = str(seek_sop['version'])
+
+  # parameters cannot be mapped
+  
+  # components not yet mapped
+   
+  object_map [actual_url] = protocol
+
+  return protocol
 
 session = requests.Session()
 session.headers.update(headers)
 
-investigation = translate_investigation('https://fairdomhub.org/investigations/289')
+investigation = translate_investigation('https://fairdomhub.org/investigations/162')
 
 json_string = json.dumps(investigation,
                          cls=ISAJSONEncoder,
@@ -221,8 +302,12 @@ json_string = json.dumps(investigation,
                          indent=4,
                          separators=(',', ': '))
 
+tab_string = isatab.dumps(investigation)
+
 print (json_string)
 
 my_json_report = isajson.validate(json_string)
 
 print (my_json_report)
+
+print (tab_string)
