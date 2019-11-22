@@ -374,6 +374,7 @@ SEEK::Application.routes.draw do
     collection do
       get :preview
       get :batch_uploader
+      post :preview_content
       post :create_content_blob
       post :investigation_selected_ajax
     end
