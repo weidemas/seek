@@ -173,6 +173,7 @@ ActiveRecord::Schema.define(version: 2020_05_13_101632) do
     t.integer "suggested_technology_type_id"
     t.text "other_creators", limit: 16777215
     t.string "deleted_contributor"
+    t.integer "position"
   end
 
   create_table "asset_doi_logs", id: :integer,  force: :cascade do |t|
