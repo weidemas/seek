@@ -716,6 +716,7 @@ ActiveRecord::Schema.define(version: 2020_05_13_101632) do
     t.integer "contributor_id"
     t.text "other_creators", limit: 16777215
     t.string "deleted_contributor"
+    t.integer "position"
   end
 
   create_table "investigations_projects", id: false,  force: :cascade do |t|
@@ -1683,6 +1684,7 @@ ActiveRecord::Schema.define(version: 2020_05_13_101632) do
     t.integer "contributor_id"
     t.text "other_creators", limit: 16777215
     t.string "deleted_contributor"
+    t.integer "position"
   end
 
   create_table "study_auth_lookup", id: false,  force: :cascade do |t|
