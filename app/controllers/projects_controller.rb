@@ -294,8 +294,57 @@ class ProjectsController < ApplicationController
   def populate_from_spreadsheet
     flash[:notice] = params
     datafile = DataFile.find(params[:spreadsheet_id])
-    csv = spreadsheet_to_csv(datafile.content_blob.data_io_object, 1, true)
-    flash[:notice]=csv
+    workbook = datafile.spreadsheet
+    sheet = workbook.sheet('Example')
+    to_keep = Set.new
+    sheet.rows.each do |r|
+      if r.nil?
+        next
+      end
+      if r.index == 1
+        values = r.cells.collect { |c| (c.nil? ? 'NIL' : c.value) }
+        @investigation_index = values.find_index('Investigation')
+        @study_index = values.find_index('Study')
+        @assay_index = values.find_index('Asay')
+        @assignee_index = @assay_index + 1
+      else
+        if !r.cell(@investigation_index).nil?
+          @latest_investigation = r.index
+        end
+        if !r.cell(@study_index).nil?
+          @latest_study = r.index
+        end
+        if !r.cell(@assay_index).nil?
+          @latest_assay = r.index
+        end
+        if !r.cell(@assignee_index).nil?
+          to_keep = to_keep | [@latest_investigation, @latest_study, @latest_assay]
+        end
+      end
+    end
+    sheet.rows.each do |r|
+      if r.nil?
+        next
+      end
+      if !to_keep.include? r.index
+        next
+      end
+      unless r.cell(@investigation_index).nil?
+        title = r.cell(@investigation_index).value
+        @investigation = Investigation.new(title: title, projects: [@project])
+        @investigation.position = r.index
+        @investigation.save
+      end
+      unless r.cell(@study_index).nil?
+        @study = Study.new(title: r.cell(@study_index).value, investigation: @investigation, position: r.index)
+        @study.save
+      end
+      unless r.cell(@assay_index).nil?
+        @assay = Assay.new(title: r.cell(@assay_index).value, study: @study, position: r.index)
+        @assay.save
+      end
+    end
+    flash[:notice]= @assay.position
     respond_with(@project) do |format|
       format.html { redirect_to project_path(@project) }
     end
