@@ -6,8 +6,12 @@ class ProjectsController < ApplicationController
   include Seek::DestroyHandling
   include ApiHelper
 
-  before_action :find_requested_item, only: %i[show admin edit update destroy asset_report admin_members
+  include SysMODB::SpreadsheetExtractor
+
+  before_action :find_requested_item, only: %i[show admin edit update destroy asset_report populate populate_from_spreadsheet
+                                               admin_members
                                                admin_member_roles update_members storage_report request_membership overview]
+  before_action :has_spreadsheets, only: %i[:populate %populate_from_spreadsheet]
   before_action :find_assets, only: [:index]
   before_action :auth_to_create, only: %i[new create]
   before_action :is_user_admin_auth, only: %i[manage destroy]
@@ -283,6 +287,20 @@ class ProjectsController < ApplicationController
     end
   end
 
+  def populate
+    respond_with(@project)
+  end
+
+  def populate_from_spreadsheet
+    flash[:notice] = params
+    datafile = DataFile.find(params[:spreadsheet_id])
+    csv = spreadsheet_to_csv(datafile.content_blob.data_io_object, 1, true)
+    flash[:notice]=csv
+    respond_with(@project) do |format|
+      format.html { redirect_to project_path(@project) }
+    end
+  end
+
   def admin_members
     respond_with(@project)
   end
@@ -447,6 +465,11 @@ class ProjectsController < ApplicationController
       error('Insufficient privileges', 'is invalid (insufficient_privileges)', :forbidden)
       return false
     end
+  end
+
+  def has_spreadsheets
+    @project = Project.find(params[:id])
+    return !@project.spreadsheets.empty?
   end
 
   def member_of_this_project

@@ -1,0 +1,31 @@
+<%= javascript_include_tag 'projects' %>
+
+<%= render :partial => "general/page_title",:locals=>{:title=>"Populating the structure of #{link_to(h(@project.title),@project)}".html_safe} %>
+
+  <%= form_tag({:action => :populate_from_spreadsheet}, :multipart => true) do -%>
+
+    <%= forward_params(:project) %>
+
+    <div class="asset_form">
+      <%= error_messages_for :project -%>
+
+      <%= panel('Spreadsheet selection', id: 'spreadsheet-panel') do %>
+      <div>
+        <div>
+          <%= select_tag "spreadsheet_id", options_from_collection_for_select(@project.spreadsheets, "id", "title") %>
+         </div>
+
+      </div>
+      <% end %>
+
+      <div>
+        <%= create_button id:"data_file_submit_btn",
+                          onclick:"return validateResourceFields('project');",
+                          class:'btn btn-primary',
+                          button_text:'Populate',
+                          'data-upload-file-text' => 'Populate' %>
+        or <%= cancel_button(project_path(@project)) -%>
+      </div>
+    </div>
+  <% end -%>
+
