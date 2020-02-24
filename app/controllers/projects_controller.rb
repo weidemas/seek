@@ -295,7 +295,7 @@ class ProjectsController < ApplicationController
     flash[:notice] = params
     datafile = DataFile.find(params[:spreadsheet_id])
     workbook = datafile.spreadsheet
-    sheet = workbook.sheet('Example')
+    sheet = workbook.sheets.first
     to_keep = Set.new
     sheet.rows.each do |r|
       if r.nil?
@@ -305,7 +305,7 @@ class ProjectsController < ApplicationController
         values = r.cells.collect { |c| (c.nil? ? 'NIL' : c.value) }
         @investigation_index = values.find_index('Investigation')
         @study_index = values.find_index('Study')
-        @assay_index = values.find_index('Asay')
+        @assay_index = values.find_index('Assay')
         @assignee_index = @assay_index + 1
       else
         if !r.cell(@investigation_index).nil?
@@ -329,19 +329,20 @@ class ProjectsController < ApplicationController
       if !to_keep.include? r.index
         next
       end
-      unless r.cell(@investigation_index).nil?
+      unless r.cell(@investigation_index).nil? || r.cell(@investigation_index).value.empty?
         title = r.cell(@investigation_index).value
         @investigation = Investigation.new(title: title, projects: [@project])
         @investigation.position = r.index
-        @investigation.save
+        @investigation.save!
       end
-      unless r.cell(@study_index).nil?
+      unless r.cell(@study_index).nil? || r.cell(@study_index).value.empty?
         @study = Study.new(title: r.cell(@study_index).value, investigation: @investigation, position: r.index)
-        @study.save
+        @study.save!
       end
-      unless r.cell(@assay_index).nil?
+      unless r.cell(@assay_index).nil? || r.cell(@assay_index).value.empty?
         @assay = Assay.new(title: r.cell(@assay_index).value, study: @study, position: r.index)
-        @assay.save
+        @assay.assay_class = AssayClass.for_type('experimental')
+        @assay.save!
       end
     end
     flash[:notice]= @assay.position
