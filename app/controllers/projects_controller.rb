@@ -295,57 +295,73 @@ class ProjectsController < ApplicationController
     flash[:notice] = params
     datafile = DataFile.find(params[:spreadsheet_id])
     workbook = datafile.spreadsheet
-    sheet = workbook.sheets.first
-    to_keep = Set.new
-    sheet.rows.each do |r|
-      if r.nil?
+    workbook.sheets.each do |sheet|
+      if sheet.rows.empty?
+        flash[:notice]= 'no rows'
         next
       end
-      if r.index == 1
-        values = r.cells.collect { |c| (c.nil? ? 'NIL' : c.value) }
-        @investigation_index = values.find_index('Investigation')
-        @study_index = values.find_index('Study')
-        @assay_index = values.find_index('Assay')
-        @assignee_index = @assay_index + 1
-      else
-        if !r.cell(@investigation_index).nil?
+      r = sheet.rows[1]
+
+      values = r.cells.collect { |c| (c.nil? ? 'NIL' : c.value) }
+      @investigation_index = values.find_index('Investigation')
+      @study_index = values.find_index('Study')
+      @assay_index = values.find_index('Assay')
+      @assignee_index = @assay_index + 1
+
+      if @investigation_index.nil? || @study_index.nil? || @assay_index.nil? || @assignee_index.nil?
+        flash[:notice]= 'indexes missing'
+        next
+      end
+      to_keep = Set.new
+      sheet.rows.each do |r|
+        if r.nil?
+          next
+        end
+        if r.index == 1
+          next
+        end
+
+        unless r.cell(@investigation_index).nil?
           @latest_investigation = r.index
         end
-        if !r.cell(@study_index).nil?
+        unless r.cell(@study_index).nil?
           @latest_study = r.index
         end
-        if !r.cell(@assay_index).nil?
+        unless r.cell(@assay_index).nil?
           @latest_assay = r.index
         end
-        if !r.cell(@assignee_index).nil?
+        unless r.cell(@assignee_index).nil?
           to_keep = to_keep | [@latest_investigation, @latest_study, @latest_assay]
         end
       end
+
+      flash[:alert]= to_keep
+
+      sheet.rows.each do |r|
+        if r.nil?
+          next
+        end
+        if !to_keep.include? r.index
+          next
+        end
+        unless r.cell(@investigation_index).nil? || r.cell(@investigation_index).value.empty?
+          title = r.cell(@investigation_index).value
+          @investigation = Investigation.new(title: title, projects: [@project])
+          @investigation.position = r.index
+          @investigation.save!
+        end
+        unless r.cell(@study_index).nil? || r.cell(@study_index).value.empty?
+          @study = Study.new(title: r.cell(@study_index).value, investigation: @investigation, position: r.index)
+          @study.save!
+        end
+        unless r.cell(@assay_index).nil? || r.cell(@assay_index).value.empty?
+          @assay = Assay.new(title: r.cell(@assay_index).value, study: @study, position: r.index)
+          @assay.assay_class = AssayClass.for_type('experimental')
+          @assay.save!
+        end
+      end
     end
-    sheet.rows.each do |r|
-      if r.nil?
-        next
-      end
-      if !to_keep.include? r.index
-        next
-      end
-      unless r.cell(@investigation_index).nil? || r.cell(@investigation_index).value.empty?
-        title = r.cell(@investigation_index).value
-        @investigation = Investigation.new(title: title, projects: [@project])
-        @investigation.position = r.index
-        @investigation.save!
-      end
-      unless r.cell(@study_index).nil? || r.cell(@study_index).value.empty?
-        @study = Study.new(title: r.cell(@study_index).value, investigation: @investigation, position: r.index)
-        @study.save!
-      end
-      unless r.cell(@assay_index).nil? || r.cell(@assay_index).value.empty?
-        @assay = Assay.new(title: r.cell(@assay_index).value, study: @study, position: r.index)
-        @assay.assay_class = AssayClass.for_type('experimental')
-        @assay.save!
-      end
-    end
-    flash[:notice]= @assay.position
+    flash[:notice]= 'Boop'
     respond_with(@project) do |format|
       format.html { redirect_to project_path(@project) }
     end
