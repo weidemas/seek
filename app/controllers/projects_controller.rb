@@ -301,48 +301,86 @@ class ProjectsController < ApplicationController
       if r.nil?
         next
       end
-      if r.index == 1
-        values = r.cells.collect { |c| (c.nil? ? 'NIL' : c.value) }
-        @investigation_index = values.find_index('Investigation')
-        @study_index = values.find_index('Study')
-        @assay_index = values.find_index('Assay')
-        @assignee_index = @assay_index + 1
-      else
-        if !r.cell(@investigation_index).nil?
-          @latest_investigation = r.index
-        end
-        if !r.cell(@study_index).nil?
-          @latest_study = r.index
-        end
-        if !r.cell(@assay_index).nil?
-          @latest_assay = r.index
-        end
-        if !r.cell(@assignee_index).nil?
-          to_keep = to_keep | [@latest_investigation, @latest_study, @latest_assay]
-        end
-      end
-    end
-    sheet.rows.each do |r|
-      if r.nil?
+      r = sheet.rows[1]
+
+      values = r.cells.collect { |c| (c.nil? ? 'NIL' : c.value) }
+      investigation_index = values.find_index('Investigation')
+      study_index = values.find_index('Study')
+      assay_index = values.find_index('Assay')
+      assignee_index = assay_index + 1
+
+      if investigation_index.nil? || study_index.nil? || assay_index.nil? || assignee_index.nil?
+        flash[:notice]= 'indexes missing'
         next
       end
-      if !to_keep.include? r.index
-        next
+      to_keep = Set.new
+
+      latest_investigation = nil
+      latest_study = nil
+      latest_assay = nil
+      sheet.rows.each do |r|
+        if r.nil?
+          next
+        end
+        if r.index == 1
+          next
+        end
+
+        unless r.cell(investigation_index).nil?
+          latest_investigation = r.index
+        end
+        unless r.cell(study_index).nil?
+          latest_study = r.index
+        end
+        unless r.cell(assay_index).nil?
+          latest_assay = r.index
+        end
+        unless r.cell(assignee_index).nil?
+          to_keep = to_keep | [latest_investigation, latest_study, latest_assay]
+        end
       end
-      unless r.cell(@investigation_index).nil? || r.cell(@investigation_index).value.empty?
-        title = r.cell(@investigation_index).value
-        @investigation = Investigation.new(title: title, projects: [@project])
-        @investigation.position = r.index
-        @investigation.save!
-      end
-      unless r.cell(@study_index).nil? || r.cell(@study_index).value.empty?
-        @study = Study.new(title: r.cell(@study_index).value, investigation: @investigation, position: r.index)
-        @study.save!
-      end
-      unless r.cell(@assay_index).nil? || r.cell(@assay_index).value.empty?
-        @assay = Assay.new(title: r.cell(@assay_index).value, study: @study, position: r.index)
-        @assay.assay_class = AssayClass.for_type('experimental')
-        @assay.save!
+
+      flash[:alert]= to_keep
+
+      investigation = nil
+      study = nil
+      assay = nil
+      sheet.rows.each do |r|
+        if r.nil?
+          next
+        end
+        if !to_keep.include? r.index
+          next
+        end
+
+        unless r.cell(investigation_index).nil? || r.cell(investigation_index).value.empty?
+          title = r.cell(investigation_index).value
+          investigation = @project.investigations.select { |i| i.title == title }.first
+          if investigation.nil?
+            investigation = Investigation.new(title: title, projects: [@project])
+          end
+          investigation.position = r.index
+          investigation.save!
+        end
+        unless r.cell(study_index).nil? || r.cell(study_index).value.empty?
+          title = r.cell(study_index).value
+          study = investigation.studies.select { |i| i.title == title }.first
+          if study.nil?
+            study = Study.new(title: title, investigation: investigation)
+          end
+          study.position = r.index
+          study.save!
+        end
+        unless r.cell(assay_index).nil? || r.cell(assay_index).value.empty?
+          title = r.cell(assay_index).value
+          assay = study.assays.select { |i| i.title == title }.first
+          if assay.nil?
+            assay = Assay.new(title: title, study: study)
+          end
+          assay.position = r.index
+          assay.assay_class = AssayClass.for_type('experimental')
+          assay.save!
+        end
       end
     end
     flash[:notice]= @assay.position
