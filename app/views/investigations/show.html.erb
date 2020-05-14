@@ -10,11 +10,13 @@
         <%= render :partial => 'projects/show_project_relationship', :locals => {:resource => @investigation}  %>
       </div>
     </div>
-    <p id="position">
-      <b><%= "Investigation position" %>: </b>
-      <%= @investigation.position %>
-    </p>
-    <%= render partial: 'general/isa_graph', locals: { root_item: @investigation, options: { depth: 4 } } %>
+    <% if Seek::Config.position_enabled %>
+      <p id="position">
+        <b><%= "Investigation position" %>: </b>
+        <%= @investigation.position %>
+      </p>
+    <% end -%>
+  <%= render partial: 'general/isa_graph', locals: { root_item: @investigation, options: { depth: 4 } } %>
   </div>
   <div class="col-md-3 col-sm-4">
     <%= render :partial=>"assets/resource_main_content_right",:locals => { :resource => @investigation } %>

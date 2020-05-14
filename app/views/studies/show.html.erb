@@ -16,10 +16,12 @@
 
         <%= render :partial => 'projects/show_project_relationship', :locals => {:resource => @study}%>
 
-        <p id="position">
-          <b><%= "Study position" %>: </b>
-          <%= @study.position %>
-        </p>
+        <% if Seek::Config.position_enabled %>
+          <p id="position">
+            <b><%= "Study position" %>: </b>
+            <%= @study.position %>
+          </p>
+        <% end -%>
         <p>
           <label><%= t('person_responsible').capitalize %>:</label>
           <% if @study.person_responsible.try :can_view? -%>

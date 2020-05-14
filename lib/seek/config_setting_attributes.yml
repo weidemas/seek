@@ -123,6 +123,7 @@ zenodo_client_secret:
 programme_user_creation_enabled:
 cache_remote_files:
 orcid_required:
+position_enabled:
 max_cachable_size:
   convert: :to_i
 hard_max_cachable_size:
