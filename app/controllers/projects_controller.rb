@@ -307,9 +307,10 @@ class ProjectsController < ApplicationController
       investigation_index = values.find_index('Investigation')
       study_index = values.find_index('Study')
       assay_index = values.find_index('Assay')
-      assignee_index = assay_index + 1
+      assignee_indices = []
+      values.each_with_index {|val,i| if val.start_with?('Assign') then assignee_indices << i end}
 
-      if investigation_index.nil? || study_index.nil? || assay_index.nil? || assignee_index.nil?
+      if investigation_index.nil? || study_index.nil? || assay_index.nil? || assignee_indices.empty?
         flash[:notice]= 'indexes missing'
         next
       end
@@ -335,7 +336,14 @@ class ProjectsController < ApplicationController
         unless r.cell(assay_index).nil?
           latest_assay = r.index
         end
-        unless r.cell(assignee_index).nil?
+        is_assigned = false
+        assignee_indices.each do |a|
+          unless r.cell(a).nil?
+            is_assigned = true
+            break
+          end
+        end
+        if is_assigned
           to_keep = to_keep | [latest_investigation, latest_study, latest_assay]
         end
       end
@@ -379,11 +387,29 @@ class ProjectsController < ApplicationController
           end
           assay.position = r.index
           assay.assay_class = AssayClass.for_type('experimental')
+          assignees = []
+          assignee_indices.each do |x|
+            unless r.cell(x).nil?
+              assignees = assignees + r.cell(x).value.split(';')
+            end
+          end
+          known_creators = []
+          other_creators = []
+          assignees.each do |a|
+            creator = Person.find_by email: a
+            if creator.nil?
+              other_creators = other_creators + [a]
+            else
+              known_creators = known_creators + [creator]
+            end
+          end
+          assay.creators = known_creators
+          assay.other_creators = other_creators.join(';')
           assay.save!
         end
       end
     end
-    flash[:notice]= @assay.position
+
     respond_with(@project) do |format|
       format.html { redirect_to project_path(@project) }
     end
