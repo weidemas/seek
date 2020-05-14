@@ -45,10 +45,12 @@
           <b><%= t('study') %>: </b>
           <%= study_link(@assay.study) %>
         </p>
-        <p id="position">
-          <b><%= "Assay position" %>: </b>
-          <%= @assay.position %>
-        </p>
+        <% if Seek::Config.position_enabled %>
+          <p id="position">
+            <b><%= "Assay position" %>: </b>
+            <%= @assay.position %>
+          </p>
+        <% end -%>
         <p id="assay_type">
           <b><%= assay_type_text -%>:</b>
           <%= link_to_assay_type(@assay) -%>
