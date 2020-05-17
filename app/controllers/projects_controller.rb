@@ -352,6 +352,11 @@ class ProjectsController < ApplicationController
       investigation = nil
       study = nil
       assay = nil
+
+      investigation_position = 1
+      study_position = 1
+      assay_position = 1
+
       sheet.rows.each do |r|
         if r.nil?
           next
@@ -366,7 +371,10 @@ class ProjectsController < ApplicationController
           if investigation.nil?
             investigation = Investigation.new(title: title, projects: [@project])
           end
-          investigation.position = r.index
+          investigation.position = investigation_position
+          investigation_position = investigation_position + 1
+          study_position = 1
+          assay_position = 1
           investigation.save!
         end
         unless r.cell(study_index).nil? || r.cell(study_index).value.empty?
@@ -375,7 +383,9 @@ class ProjectsController < ApplicationController
           if study.nil?
             study = Study.new(title: title, investigation: investigation)
           end
-          study.position = r.index
+          study.position = study_position
+          study_position = study_position + 1
+          assay_position = 1
           study.save!
         end
         unless r.cell(assay_index).nil? || r.cell(assay_index).value.empty?
@@ -384,7 +394,8 @@ class ProjectsController < ApplicationController
           if assay.nil?
             assay = Assay.new(title: title, study: study)
           end
-          assay.position = r.index
+          assay.position = assay_position
+          assay_position = assay_position + 1
           assay.assay_class = AssayClass.for_type('experimental')
           assignees = []
           assignee_indices.each do |x|
