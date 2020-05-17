@@ -291,8 +291,13 @@ class ProjectsController < ApplicationController
     respond_with(@project)
   end
 
-  def populate_from_spreadsheet
-    flash[:notice] = params
+  def populate_from_speadsheet
+    ActiveRecord::Base.transaction do
+      populate_from_spreadsheet_impl
+    end
+  end
+  
+  def populate_from_spreadsheet_impl
     datafile = DataFile.find(params[:spreadsheet_id])
     workbook = datafile.spreadsheet
     sheet = workbook.sheets.first
@@ -308,10 +313,21 @@ class ProjectsController < ApplicationController
       study_index = values.find_index('Study')
       assay_index = values.find_index('Assay')
       assignee_indices = []
-      values.each_with_index {|val,i| if val.start_with?('Assign') then assignee_indices << i end}
+      protocol_index = nil
+      values.each_with_index {
+        |val,i|
+        if val.start_with?('Assign')
+        then
+          assignee_indices << i
+        end
+        if val.start_with?('Protocol')
+        then
+          protocol_index = i
+        end
+      }
 
       if investigation_index.nil? || study_index.nil? || assay_index.nil? || assignee_indices.empty?
-        flash[:notice]= 'indexes missing'
+        flash[:notice]= 'indices missing'
         next
       end
       to_keep = Set.new
@@ -348,8 +364,6 @@ class ProjectsController < ApplicationController
         end
       end
 
-      flash[:alert]= to_keep
-
       investigation = nil
       study = nil
       assay = nil
@@ -373,7 +387,7 @@ class ProjectsController < ApplicationController
             investigation = Investigation.new(title: title, projects: [@project])
           end
           investigation.position = investigation_position
-          investigation_position = investigation_position + 1
+          investigation_position += 1
           study_position = 1
           assay_position = 1
           investigation.save!
@@ -385,7 +399,7 @@ class ProjectsController < ApplicationController
             study = Study.new(title: title, investigation: investigation)
           end
           study.position = study_position
-          study_position = study_position + 1
+          study_position += 1
           assay_position = 1
           study.save!
         end
@@ -396,7 +410,7 @@ class ProjectsController < ApplicationController
             assay = Assay.new(title: title, study: study)
           end
           assay.position = assay_position
-          assay_position = assay_position + 1
+          assay_position += 1
           assay.assay_class = AssayClass.for_type('experimental')
           assignees = []
           assignee_indices.each do |x|
@@ -416,6 +430,18 @@ class ProjectsController < ApplicationController
           end
           assay.creators = known_creators
           assay.other_creators = other_creators.join(';')
+          unless r.cell(protocol_index).nil?
+            protocol_string = r.cell(protocol_index).value
+            protocol_id = protocol_string.split(/\//)[-1].to_i
+            flash[:notice] = protocol_string + ' - ' + Seek::Config.site_base_host + ' - ' +  "#{protocol_string.starts_with?(Seek::Config.site_base_host)}" + ' - ' + "#{protocol_id}"
+            if protocol_string.starts_with?(Seek::Config.site_base_host)
+              flash[:alert] = protocol_id
+              protocol = @project.sops.select { |p| p.id == protocol_id }.first
+              unless protocol.nil?
+                assay.sops = [protocol]
+              end
+            end
+          end
           assay.save!
         end
       end
