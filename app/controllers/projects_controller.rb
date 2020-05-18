@@ -11,7 +11,7 @@ class ProjectsController < ApplicationController
   before_action :find_requested_item, only: %i[show admin edit update destroy asset_report populate populate_from_spreadsheet
                                                admin_members
                                                admin_member_roles update_members storage_report request_membership overview]
-  before_action :has_spreadsheets, only: %i[:populate %populate_from_spreadsheet]
+  before_action :has_spreadsheets, only: %i[:populate populate_from_spreadsheet]
   before_action :find_assets, only: [:index]
   before_action :auth_to_create, only: %i[new create]
   before_action :is_user_admin_auth, only: %i[manage destroy]
@@ -291,159 +291,153 @@ class ProjectsController < ApplicationController
     respond_with(@project)
   end
 
-  def populate_from_speadsheet
-    ActiveRecord::Base.transaction do
-      populate_from_spreadsheet_impl
-    end
-  end
+#  def populate_from_speadsheet
+#    ActiveRecord::Base.transaction do
+#     populate_from_spreadsheet_impl
+#    end
+#  end
   
-  def populate_from_spreadsheet_impl
+  def populate_from_spreadsheet #_impl
     datafile = DataFile.find(params[:spreadsheet_id])
     workbook = datafile.spreadsheet
     sheet = workbook.sheets.first
     to_keep = Set.new
+
+    r = sheet.rows[1]
+
+    values = r.cells.collect { |c| (c.nil? ? 'NIL' : c.value) }
+    investigation_index = values.find_index('Investigation')
+    study_index = values.find_index('Study')
+    assay_index = values.find_index('Assay')
+    assignee_indices = []
+    protocol_index = nil
+    values.each_with_index {
+      |val,i|
+      if val.start_with?('Assign')
+      then
+        assignee_indices << i
+      end
+      if val.start_with?('Protocol')
+      then
+        protocol_index = i
+      end
+    }
+
+    if investigation_index.nil? || study_index.nil? || assay_index.nil? || assignee_indices.empty?
+      flash[:notice]= 'indices missing'
+    end
+
+    to_keep = Set.new
+
+    latest_investigation = nil
+    latest_study = nil
+    latest_assay = nil
     sheet.rows.each do |r|
       if r.nil?
         next
       end
-      r = sheet.rows[1]
-
-      values = r.cells.collect { |c| (c.nil? ? 'NIL' : c.value) }
-      investigation_index = values.find_index('Investigation')
-      study_index = values.find_index('Study')
-      assay_index = values.find_index('Assay')
-      assignee_indices = []
-      protocol_index = nil
-      values.each_with_index {
-        |val,i|
-        if val.start_with?('Assign')
-        then
-          assignee_indices << i
-        end
-        if val.start_with?('Protocol')
-        then
-          protocol_index = i
-        end
-      }
-
-      if investigation_index.nil? || study_index.nil? || assay_index.nil? || assignee_indices.empty?
-        flash[:notice]= 'indices missing'
+      if r.index == 1
         next
       end
-      to_keep = Set.new
 
-      latest_investigation = nil
-      latest_study = nil
-      latest_assay = nil
-      sheet.rows.each do |r|
-        if r.nil?
-          next
-        end
-        if r.index == 1
-          next
-        end
-
-        unless r.cell(investigation_index).nil?
-          latest_investigation = r.index
-        end
-        unless r.cell(study_index).nil?
-          latest_study = r.index
-        end
-        unless r.cell(assay_index).nil?
-          latest_assay = r.index
-        end
-        is_assigned = false
-        assignee_indices.each do |a|
-          unless r.cell(a).nil?
-            is_assigned = true
-            break
-          end
-        end
-        if is_assigned
-          to_keep = to_keep | [latest_investigation, latest_study, latest_assay]
+      unless r.cell(investigation_index).nil?
+        latest_investigation = r.index
+      end
+      unless r.cell(study_index).nil?
+        latest_study = r.index
+      end
+      unless r.cell(assay_index).nil?
+        latest_assay = r.index
+      end
+      is_assigned = false
+      assignee_indices.each do |a|
+        unless r.cell(a).nil?
+          is_assigned = true
+          break
         end
       end
+      if is_assigned
+        to_keep = to_keep | [latest_investigation, latest_study, latest_assay]
+      end
+    end
 
-      investigation = nil
-      study = nil
-      assay = nil
+    investigation = nil
+    study = nil
+    assay = nil
 
-      investigation_position = 1
-      study_position = 1
-      assay_position = 1
+    investigation_position = 1
+    study_position = 1
+    assay_position = 1
 
-      sheet.rows.each do |r|
-        if r.nil?
-          next
+    sheet.rows.each do |r|
+      if r.nil?
+        next
+      end
+      if !to_keep.include? r.index
+        next
+      end
+
+      unless r.cell(investigation_index).nil? || r.cell(investigation_index).value.empty?
+        title = r.cell(investigation_index).value
+        investigation = @project.investigations.select { |i| i.title == title }.first
+        if investigation.nil?
+          investigation = Investigation.new(title: title, projects: [@project])
         end
-        if !to_keep.include? r.index
-          next
+        investigation.position = investigation_position
+        investigation_position += 1
+        study_position = 1
+        assay_position = 1
+        investigation.save!
+      end
+      unless r.cell(study_index).nil? || r.cell(study_index).value.empty?
+        title = r.cell(study_index).value
+        study = investigation.studies.select { |i| i.title == title }.first
+        if study.nil?
+          study = Study.new(title: title, investigation: investigation)
         end
-
-        unless r.cell(investigation_index).nil? || r.cell(investigation_index).value.empty?
-          title = r.cell(investigation_index).value
-          investigation = @project.investigations.select { |i| i.title == title }.first
-          if investigation.nil?
-            investigation = Investigation.new(title: title, projects: [@project])
+        study.position = study_position
+        study_position += 1
+        assay_position = 1
+        study.save!
+      end
+      unless r.cell(assay_index).nil? || r.cell(assay_index).value.empty?
+        title = r.cell(assay_index).value
+        assay = study.assays.select { |i| i.title == title }.first
+        if assay.nil?
+          assay = Assay.new(title: title, study: study)
+        end
+        assay.position = assay_position
+        assay_position += 1
+        assay.assay_class = AssayClass.for_type('experimental')
+        assignees = []
+        assignee_indices.each do |x|
+          unless r.cell(x).nil?
+            assignees = assignees + r.cell(x).value.split(';')
           end
-          investigation.position = investigation_position
-          investigation_position += 1
-          study_position = 1
-          assay_position = 1
-          investigation.save!
         end
-        unless r.cell(study_index).nil? || r.cell(study_index).value.empty?
-          title = r.cell(study_index).value
-          study = investigation.studies.select { |i| i.title == title }.first
-          if study.nil?
-            study = Study.new(title: title, investigation: investigation)
+        known_creators = []
+        other_creators = []
+        assignees.each do |a|
+          creator = Person.find_by email: a
+          if creator.nil?
+            other_creators = other_creators + [a]
+          else
+            known_creators = known_creators + [creator]
           end
-          study.position = study_position
-          study_position += 1
-          assay_position = 1
-          study.save!
         end
-        unless r.cell(assay_index).nil? || r.cell(assay_index).value.empty?
-          title = r.cell(assay_index).value
-          assay = study.assays.select { |i| i.title == title }.first
-          if assay.nil?
-            assay = Assay.new(title: title, study: study)
-          end
-          assay.position = assay_position
-          assay_position += 1
-          assay.assay_class = AssayClass.for_type('experimental')
-          assignees = []
-          assignee_indices.each do |x|
-            unless r.cell(x).nil?
-              assignees = assignees + r.cell(x).value.split(';')
+        assay.creators = known_creators
+        assay.other_creators = other_creators.join(';')
+        unless r.cell(protocol_index).nil?
+          protocol_string = r.cell(protocol_index).value
+          protocol_id = protocol_string.split(/\//)[-1].to_i
+          if protocol_string.starts_with?(Seek::Config.site_base_host)
+            protocol = @project.sops.select { |p| p.id == protocol_id }.first
+            unless protocol.nil?
+              assay.sops = [protocol]
             end
           end
-          known_creators = []
-          other_creators = []
-          assignees.each do |a|
-            creator = Person.find_by email: a
-            if creator.nil?
-              other_creators = other_creators + [a]
-            else
-              known_creators = known_creators + [creator]
-            end
-          end
-          assay.creators = known_creators
-          assay.other_creators = other_creators.join(';')
-          unless r.cell(protocol_index).nil?
-            protocol_string = r.cell(protocol_index).value
-            protocol_id = protocol_string.split(/\//)[-1].to_i
-            flash[:notice] = protocol_string + ' - ' + Seek::Config.site_base_host + ' - ' +  "#{protocol_string.starts_with?(Seek::Config.site_base_host)}" + ' - ' + "#{protocol_id}"
-            if protocol_string.starts_with?(Seek::Config.site_base_host)
-              flash[:alert] = protocol_id
-              protocol = @project.sops.select { |p| p.id == protocol_id }.first
-              unless protocol.nil?
-                assay.sops = [protocol]
-              end
-            end
-          end
-          assay.save!
         end
+        assay.save!
       end
     end
 
