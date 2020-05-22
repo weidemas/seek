@@ -6,7 +6,6 @@ module Seek
         datafile = DataFile.find(params[:spreadsheet_id])
         workbook = datafile.spreadsheet
         sheet = workbook.sheets.first
-        to_keep = Set.new
 
         r = sheet.rows[1]
 
@@ -32,40 +31,6 @@ module Seek
           flash[:notice]= 'indices missing'
         end
 
-        to_keep = Set.new
-
-        latest_investigation = nil
-        latest_study = nil
-        latest_assay = nil
-        sheet.rows.each do |r|
-          if r.nil?
-            next
-          end
-          if r.index == 1
-            next
-          end
-
-          unless r.cell(investigation_index).nil?
-            latest_investigation = r.index
-          end
-          unless r.cell(study_index).nil?
-            latest_study = r.index
-          end
-          unless r.cell(assay_index).nil?
-            latest_assay = r.index
-          end
-          is_assigned = false
-          assignee_indices.each do |a|
-            unless r.cell(a).nil?
-              is_assigned = true
-              break
-            end
-          end
-          if is_assigned
-            to_keep = to_keep | [latest_investigation, latest_study, latest_assay]
-          end
-        end
-
         investigation = nil
         study = nil
         assay = nil
@@ -78,7 +43,7 @@ module Seek
           if r.nil?
             next
           end
-          if !to_keep.include? r.index
+          if r.index == 1
             next
           end
 
