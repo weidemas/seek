@@ -98,6 +98,7 @@
   </div>
 </div>
 
+
 <% if Seek::Config.project_hierarchy_enabled && logged_in_and_member? -%>
     <div style="clear:both;">
       <b>
@@ -120,6 +121,8 @@
       </div>
     </div>
 <% end %>
+
+<%= render partial: 'general/isa_graph', locals:  { root_item: @project, deep: true, include_parents: true } %>
 
 <%# get, classify and authorize all assets for this project -%>
 <%= render :partial=>"general/items_related_to",:object => @project %>

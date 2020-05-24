@@ -19,6 +19,7 @@
                 <%= render partial:'assets/fileinfo', object: @display_data_file.content_blob %>
             <% end %>
         <% end %>
+        <%= render partial:'assets/resource_projects', :locals => {:resource => @data_file} %>
 
         <%= render :partial => "assets/special_auth_code_display", :locals => {:resource => @data_file} %>
 
