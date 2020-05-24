@@ -7,9 +7,9 @@ module Seek
         workbook = datafile.spreadsheet
         sheet = workbook.sheets.first
 
-        r = sheet.rows[1]
+        row_1 = sheet.rows[1]
 
-        values = r.cells.collect { |c| (c.nil? ? 'NIL' : c.value) }
+        values = row_1.cells.collect { |c| (c.nil? ? 'NIL' : c.value) }
         investigation_index = values.find_index('Investigation')
         study_index = values.find_index('Study')
         assay_index = values.find_index('Assay')
@@ -31,13 +31,13 @@ module Seek
           flash[:notice]= 'indices missing'
         end
 
-        investigation = nil
-        study = nil
-        assay = nil
+        @investigation = nil
+        @study = nil
+        @assay = nil
 
-        investigation_position = 1
-        study_position = 1
-        assay_position = 1
+        @investigation_position = 1
+        @study_position = 1
+        @assay_position = 1
 
         sheet.rows.each do |r|
           if r.nil?
@@ -48,41 +48,50 @@ module Seek
           end
 
           unless r.cell(investigation_index).nil? || r.cell(investigation_index).value.empty?
-            title = r.cell(investigation_index).value
-            investigation = @project.investigations.select { |i| i.title == title }.first
-            if investigation.nil?
-              investigation = Investigation.new(title: title, projects: [@project])
+            title = r.cell(investigation_index).value.to_s.strip
+            @investigation = @project.investigations.select { |i| i.title == title }.first
+            if @investigation.nil?
+              @investigation = Investigation.new(title: title, projects: [@project])
             end
-            investigation.position = investigation_position
-            investigation_position += 1
-            study_position = 1
-            assay_position = 1
-            investigation.save!
+            @investigation.position = @investigation_position
+            @investigation_position += 1
+            @study_position = 1
+            @study = nil
+            @assay = nil
+            @assay_position = 1
+            @investigation.save!
           end
           unless r.cell(study_index).nil? || r.cell(study_index).value.empty?
-            title = r.cell(study_index).value
-            study = investigation.studies.select { |i| i.title == title }.first
-            if study.nil?
-              study = Study.new(title: title, investigation: investigation)
+            @title = r.cell(study_index).value.to_s.strip
+            @study = nil
+            @investigation.studies.each do |s|
+              if s.title == @title
+                @study = s
+                break
+              end
             end
-            study.position = study_position
-            study_position += 1
-            assay_position = 1
-            study.save!
+            if @study.nil?
+              @study = Study.new(title: @title, investigation: @investigation)
+            end
+            @study.position = @study_position
+            @study_position += 1
+            @assay = nil
+            @assay_position = 1
+            @study.save!
           end
           unless r.cell(assay_index).nil? || r.cell(assay_index).value.empty?
-            title = r.cell(assay_index).value
-            assay = study.assays.select { |i| i.title == title }.first
-            if assay.nil?
-              assay = Assay.new(title: title, study: study)
+            title = r.cell(assay_index).value.to_s.strip
+            @assay = Assay.find_by title: title, study: @study
+            if @assay.nil?
+              @assay = Assay.new(title: title, study: @study)
             end
-            assay.position = assay_position
-            assay_position += 1
-            assay.assay_class = AssayClass.for_type('experimental')
+            @assay.position = @assay_position
+            @assay_position += 1
+            @assay.assay_class = AssayClass.for_type('experimental')
             assignees = []
             assignee_indices.each do |x|
               unless r.cell(x).nil?
-                assignees = assignees + r.cell(x).value.split(';')
+                assignees += r.cell(x).value.split(';')
               end
             end
             known_creators = []
@@ -90,24 +99,24 @@ module Seek
             assignees.each do |a|
               creator = Person.find_by email: a
               if creator.nil?
-                other_creators = other_creators + [a]
+                other_creators += [a]
               else
-                known_creators = known_creators + [creator]
+                known_creators += [creator]
               end
             end
-            assay.creators = known_creators
-            assay.other_creators = other_creators.join(';')
+            @assay.creators = known_creators
+            @assay.other_creators = other_creators.join(';')
             unless r.cell(protocol_index).nil?
-              protocol_string = r.cell(protocol_index).value
+              protocol_string = r.cell(protocol_index).value.to_s.strip
               protocol_id = protocol_string.split(/\//)[-1].to_i
               if protocol_string.starts_with?(Seek::Config.site_base_host)
                 protocol = @project.sops.select { |p| p.id == protocol_id }.first
                 unless protocol.nil?
-                  assay.sops = [protocol]
+                  @assay.sops = [protocol]
                 end
               end
             end
-            assay.save!
+            @assay.save!
           end
         end
 
@@ -116,4 +125,5 @@ module Seek
 
     end
   end
+
 end
