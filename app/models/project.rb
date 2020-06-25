@@ -223,6 +223,19 @@ class Project < ApplicationRecord
     user.is_admin? || user.is_project_administrator?(self) || user.is_programme_administrator?(programme)
   end
 
+  def can_manage_with_children?(user= User.current_user)
+    parent_ok = can_manage?(user)
+    non_managed_child = investigations.detect { |i| !i.can_manage?(user) }
+    return parent_ok && (non_managed_child.nil?)
+  end
+  
+  def can_manage_hierarchy?(user= User.current_user)
+    parent_ok = can_manage?(user)
+    non_managed_child = investigations.detect { |i| !i.can_manage?(user) }
+# Needs more 
+    return parent_ok && (non_managed_child.nil?)
+  end
+  
   def can_delete?(user = User.current_user)
     user && user.is_admin? && work_groups.collect(&:people).flatten.empty? &&
         investigations.empty? && studies.empty? && assays.empty? && assets.empty? &&

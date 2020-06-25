@@ -4,9 +4,14 @@ module Seek
 
       def populate_from_spreadsheet_impl
         datafile = DataFile.find(params[:spreadsheet_id])
+
+        policy = @project.default_policy
+
+        # csv_text = spreadsheet_to_csv(open(datafile.content_blob.filepath))
+        # csv = CSV.new(csv_text, :headers => true)
+        # rows = csv.read()
         workbook = datafile.spreadsheet
         sheet = workbook.sheets.first
-
         row_1 = sheet.rows[1]
 
         values = row_1.cells.collect { |c| (c.nil? ? 'NIL' : c.value) }
@@ -17,6 +22,7 @@ module Seek
         protocol_index = nil
         values.each_with_index {
           |val,i|
+
           if val.start_with?('Assign')
           then
             assignee_indices << i
