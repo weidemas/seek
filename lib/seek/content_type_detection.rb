@@ -37,6 +37,10 @@ module Seek
       blob.file_exists? && within_spreadsheet_size_limit(blob) && is_supported_spreadsheet_format?(blob)
     end
 
+    def is_any_spreadsheet?(blob = self)
+      is_xls?(blob) || is_xlsx?(blob) || is_xlsm?(blob) || is_csv?(blob) || is_tsv?(blob)
+    end
+      
     def is_in_simulatable_size_limit?(blob = self)
       !blob.file_size.nil? && blob.file_size < MAX_SIMULATABLE_SIZE
     end
@@ -57,6 +61,10 @@ module Seek
       mime_extensions(blob.content_type).include?('csv')
     end
 
+    def is_tsv?(blob = self)
+      mime_extensions(blob.content_type).include?('tsv')
+    end
+    
     def is_binary?(blob = self)
       blob.content_type == 'application/octet-stream'
     end

@@ -7,7 +7,11 @@ module Seek
 
         policy = @project.default_policy
 
-        # csv_text = spreadsheet_to_csv(open(datafile.content_blob.filepath))
+        csv_text = nil
+        if datafile.contains_extractable_spreadsheet?
+          csv_text = spreadsheet_to_csv(open(datafile.content_blob.filepath))
+        end
+
         # csv = CSV.new(csv_text, :headers => true)
         # rows = csv.read()
         workbook = datafile.spreadsheet
@@ -57,7 +61,7 @@ module Seek
             title = r.cell(investigation_index).value.to_s.strip
             @investigation = @project.investigations.select { |i| i.title == title }.first
             if @investigation.nil?
-              @investigation = Investigation.new(title: title, projects: [@project])
+              @investigation = Investigation.new(title: title, projects: [@project], policy: policy)
             end
             @investigation.position = @investigation_position
             @investigation_position += 1
