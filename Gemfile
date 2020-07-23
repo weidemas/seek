@@ -107,6 +107,8 @@ gem 'omniauth_openid_connect'
 gem 'omniauth-rails_csrf_protection', '~> 0.1'
 gem 'omniauth-github', '~> 1.2.0'
 
+gem 'github_webhook', '~> 1.1'
+
 gem 'ransack'
 
 gem 'uglifier'

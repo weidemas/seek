@@ -7,6 +7,8 @@ SEEK::Application.routes.draw do
   mount MagicLamp::Genie, at: (SEEK::Application.config.relative_url_root || '/') + 'magic_lamp' if defined?(MagicLamp)
   # mount Teaspoon::Engine, :at => (SEEK::Application.config.relative_url_root || "/") + "teaspoon" if defined?(Teaspoon)
 
+  resource :github_webhooks, only: :create, defaults: { formats: :json }
+
   # Concerns
   concern :has_content_blobs do
     member do
