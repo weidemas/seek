@@ -1,13 +1,24 @@
 class GithubWebhooksController < ActionController::Base
   include GithubWebhook::Processor
 
-  # Handle push event
-  def github_release(payload)
+  def github_delete(payload)
+    pp "##### DELETE #####"
     pp payload.inspect
   end
 
-  # Handle create event
+  def github_create(payload)
+    pp "##### CREATE #####"
+    pp payload.inspect
+  end
+
+  def github_release(payload)
+    pp "##### RELEASE #####"
+    pp payload.inspect
+  end
+
+
   def github_tag(payload)
+    pp "##### TAG #####"
     pp payload.inspect
   end
 
