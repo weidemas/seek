@@ -2,24 +2,19 @@ class GithubWebhooksController < ActionController::Base
   include GithubWebhook::Processor
 
   def github_delete(payload)
-    pp "##### DELETE #####"
-    pp payload.inspect
+    Rails.logger.info("##### DELETE #####  \n#{payload.inspect}")
   end
 
   def github_create(payload)
-    pp "##### CREATE #####"
-    pp payload.inspect
+    Rails.logger.info("##### CREATE #####  \n#{payload.inspect}")
   end
 
   def github_release(payload)
-    pp "##### RELEASE #####"
-    pp payload.inspect
+    Rails.logger.info("##### RELEASE #####  \n#{payload.inspect}")
   end
 
-
   def github_tag(payload)
-    pp "##### TAG #####"
-    pp payload.inspect
+    Rails.logger.info("##### TAG #####  \n#{payload.inspect}")
   end
 
   private
