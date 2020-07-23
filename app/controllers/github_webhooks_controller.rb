@@ -13,10 +13,6 @@ class GithubWebhooksController < ActionController::Base
     Rails.logger.info("##### RELEASE #####  \n#{payload.inspect}")
   end
 
-  def github_tag(payload)
-    Rails.logger.info("##### TAG #####  \n#{payload.inspect}")
-  end
-
   private
 
   def webhook_secret(payload)
