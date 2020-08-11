@@ -12,7 +12,7 @@
       <%= panel('Spreadsheet selection', id: 'spreadsheet-panel') do %>
       <div>
         <div>
-          <%= select_tag "spreadsheet_id", options_from_collection_for_select(@project.spreadsheets, "id", "title") %>
+          <%= select_tag "spreadsheet_id", options_from_collection_for_select(@project.tables, "id", "title") %>
          </div>
 
       </div>

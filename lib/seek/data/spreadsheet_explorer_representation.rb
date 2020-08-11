@@ -9,7 +9,7 @@ module Seek
       MIN_COLS = 10
 
       def supported_spreadsheet_format?
-        content_blob && content_blob.is_supported_spreadsheet_format?
+        content_blob&.is_supported_spreadsheet_format?
       end
 
       def contains_extractable_spreadsheet?
