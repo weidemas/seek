@@ -4,6 +4,9 @@ module Seek
 
       def populate_from_spreadsheet_impl
         datafile = DataFile.find(params[:spreadsheet_id])
+
+        policy = @project.default_policy
+        
         workbook = datafile.spreadsheet
         sheet = workbook.sheets.first
 
@@ -51,7 +54,7 @@ module Seek
             title = r.cell(investigation_index).value
             investigation = @project.investigations.select { |i| i.title == title }.first
             if investigation.nil?
-              investigation = Investigation.new(title: title, projects: [@project])
+              investigation = Investigation.new(title: title, projects: [@project], policy: policy.deep_copy)
             end
             investigation.position = investigation_position
             investigation_position += 1
@@ -63,7 +66,8 @@ module Seek
             title = r.cell(study_index).value
             study = investigation.studies.select { |i| i.title == title }.first
             if study.nil?
-              study = Study.new(title: title, investigation: investigation)
+              study = Study.new(title: title, investigation: investigation,
+                                policy: policy.deep_copy )
             end
             study.position = study_position
             study_position += 1
@@ -74,7 +78,8 @@ module Seek
             title = r.cell(assay_index).value
             assay = study.assays.select { |i| i.title == title }.first
             if assay.nil?
-              assay = Assay.new(title: title, study: study)
+              assay = Assay.new(title: title, study: study,
+                                policy: policy.deep_copy )
             end
             assay.position = assay_position
             assay_position += 1

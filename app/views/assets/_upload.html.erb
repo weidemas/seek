@@ -15,6 +15,11 @@ end
 
 %>
 
+<%= alert_box do %>
+<p>To upload or register an object, you must be invested with rights to upload the data or the asset and, if relevant, the Third Pary owner(s) have been informed.
+</p>
+<% end %>
+
 <% if !(asset_name == "Project") %>
   <%# MERGENOTE - need to pluralize text for batch upload %>
   <div>
