@@ -107,6 +107,8 @@ namespace :seek do
         end
       end
     end
+  end
+  
   desc "Clear encrypted settings"
   task clear_encrypted_settings: :environment do
     Settings.where(var: Seek::Config.encrypted_settings).destroy_all
