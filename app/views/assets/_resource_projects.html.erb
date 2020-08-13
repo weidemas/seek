@@ -1,8 +1,10 @@
 <% unless resource.nil? -%>
     
  <% resource.projects.each do |p| %>
+<p>
    <b>Project: </b>
    <%= link_to p.title, project_path(p) %>
+</p>
  <% end %>
 
 <% end -%>

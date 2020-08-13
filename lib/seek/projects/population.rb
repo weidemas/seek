@@ -51,7 +51,7 @@ module Seek
           end
 
           unless r.cell(investigation_index).nil? || r.cell(investigation_index).value.empty?
-            title = r.cell(investigation_index).value
+            title = r.cell(investigation_index).value.to_s.strip
             investigation = @project.investigations.select { |i| i.title == title }.first
             if investigation.nil?
               investigation = Investigation.new(title: title, projects: [@project], policy: policy.deep_copy)
@@ -63,7 +63,7 @@ module Seek
             investigation.save!
           end
           unless r.cell(study_index).nil? || r.cell(study_index).value.empty?
-            title = r.cell(study_index).value
+            title = r.cell(study_index).value.to_s.strip
             study = investigation.studies.select { |i| i.title == title }.first
             if study.nil?
               study = Study.new(title: title, investigation: investigation,
@@ -75,7 +75,7 @@ module Seek
             study.save!
           end
           unless r.cell(assay_index).nil? || r.cell(assay_index).value.empty?
-            title = r.cell(assay_index).value
+            title = r.cell(assay_index).value.to_s.strip
             assay = study.assays.select { |i| i.title == title }.first
             if assay.nil?
               assay = Assay.new(title: title, study: study,
@@ -103,7 +103,7 @@ module Seek
             assay.creators = known_creators
             assay.other_creators = other_creators.join(';')
             unless r.cell(protocol_index).nil?
-              protocol_string = r.cell(protocol_index).value
+              protocol_string = r.cell(protocol_index).value.to_s.strip
               protocol_id = protocol_string.split(/\//)[-1].to_i
               if protocol_string.starts_with?(Seek::Config.site_base_host)
                 protocol = @project.sops.select { |p| p.id == protocol_id }.first
