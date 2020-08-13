@@ -25,30 +25,16 @@ module Seek
     def update_relationships(asset, params)
       Relationship.set_attributions(asset, params[:attributions])
     end
-
-    def update_asset_link(asset, params)
-      url =  params[:url]
-
-      if asset.discussion_links.empty?
-        asset.discussion_links.build(url: url) unless url.empty?
-      else
-        if url.empty?
-          asset.discussion_links.first.destroy
-        else
-          asset.discussion_links.first.update_attribute(:url, url)
-        end
-      end
-    end
-
-    def request_resource
+    
+    def request_contact
       resource = class_for_controller_name.find(params[:id])
       details = params[:details]
-      mail = Mailer.request_resource(current_user, resource, details)
+      mail = Mailer.request_contact(current_user, resource, details)
       mail.deliver_later
-
+      MessageLog.log_contact_request(current_user.person, resource, details)
       @resource = resource
       respond_to do |format|
-        format.js { render template: 'assets/request_resource' }
+        format.js { render template: 'assets/request_contact' }
       end
     end
 

@@ -54,6 +54,16 @@ class Programme < ApplicationRecord
       joins: [:funding_codes_as_text]
   )
 
+  acts_as_discussable
+
+  def self.managed_programme
+    Programme.find_by_id(Seek::Config.managed_programme_id)
+  end
+
+  def human_diseases
+    projects.collect(&:human_diseases).flatten.uniq
+  end
+
   def assets
     (data_files + models + sops + presentations + events + publications + documents).uniq.compact
   end
@@ -88,6 +98,10 @@ class Programme < ApplicationRecord
 
   def can_activate?(user = User.current_user)
     user && user.is_admin? && !is_activated?
+  end
+
+  def allows_user_projects?
+    open_for_projects?
   end
 
   def self.can_create?

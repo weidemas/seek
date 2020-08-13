@@ -7,6 +7,7 @@
 <% show_doi_button = display_asset && (asset.supports_doi? && asset.is_published? && asset.can_manage? && display_asset.can_mint_doi?) %>
 <% show_publish_button = asset.is_in_isa_publishable? && asset.can_publish? %>
 
+<%= render partial: 'assets/request_contact', locals: { object: asset } if asset.respond_to?(:creators) -%>
 <%= render partial: 'subscriptions/subscribe', locals: { object: asset } -%>
 
 <% if asset.is_a?(DataFile) %>
@@ -39,11 +40,7 @@
         <%= button_link_to('Explore', 'spreadsheet', polymorphic_path(asset, version: version, action: :explore, code: params[:code])) %>
       <% else %>
         <% explanation = "This spreadsheet is too big to be explored (larger than #{Seek::Config.max_extractable_spreadsheet_size} MB), or the file does not exist." %>
-        <span data-tooltip='<%= tooltip(explanation) %>'>
-            <span class='disabled_icon disabled-button btn btn-default'>
-              <%= image('spreadsheet', { alt: 'Explore', class: 'disabled' }) %> Explore
-            </span>
-        </span>
+        <%= button_link_to('Explore', 'spreadsheet', nil, disabled_reason: explanation) %>
       <% end %>
     <% elsif show_view_content_btn %>
       <%= render partial: 'assets/view_content',
@@ -52,9 +49,6 @@
     <% end %>
   <% end -%>
 
-  <% if logged_in? && !can_download_asset?(asset, params[:code]) %>
-    <%= render partial: 'assets/request_resource', locals: { resource: asset } %>
-  <% end -%>
 <% end -%>
 
 <% if asset.can_edit? %>

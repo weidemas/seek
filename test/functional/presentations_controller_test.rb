@@ -210,7 +210,7 @@ class PresentationsControllerTest < ActionController::TestCase
   test 'should show the other creators in -uploader and creators- box' do
     presentation = Factory(:presentation, policy: Factory(:public_policy), other_creators: 'another creator')
     get :show, params: { id: presentation }
-    assert_select 'div', text: 'another creator', count: 1
+    assert_select 'li.author-list-item', text: 'another creator', count: 1
   end
 
   test 'should be able to view ms/open office ppt content' do
@@ -220,12 +220,14 @@ class PresentationsControllerTest < ActionController::TestCase
       get :show, params: { id: ms_ppt_presentation.id }
       assert_response :success
       assert_select 'a', text: /View content/, count: 1
+      assert_select 'a.disabled', text: /View content/, count: 0
 
       openoffice_ppt_presentation = Factory(:odp_presentation, policy: Factory(:all_sysmo_downloadable_policy))
       assert openoffice_ppt_presentation.content_blob.is_content_viewable?
       get :show, params: { id: openoffice_ppt_presentation.id }
       assert_response :success
       assert_select 'a', text: /View content/, count: 1
+      assert_select 'a.disabled', text: /View content/, count: 0
     end
   end
 
@@ -236,14 +238,14 @@ class PresentationsControllerTest < ActionController::TestCase
       refute ms_ppt_presentation.content_blob.file_exists?('pdf')
       get :show, params: { id: ms_ppt_presentation.id }
       assert_response :success
-      assert_select 'span.disabled-button', text: /View content/, count: 1
+      assert_select 'a.disabled', text: /View content/, count: 1
 
       openoffice_ppt_presentation = Factory(:odp_presentation, policy: Factory(:all_sysmo_downloadable_policy))
       assert openoffice_ppt_presentation.content_blob.file_exists?
       refute openoffice_ppt_presentation.content_blob.file_exists?('pdf')
       get :show, params: { id: openoffice_ppt_presentation.id }
       assert_response :success
-      assert_select 'span.disabled-button', text: /View content/, count: 1
+      assert_select 'a.disabled', text: /View content/, count: 1
     end
   end
 
@@ -518,7 +520,7 @@ class PresentationsControllerTest < ActionController::TestCase
   test 'should create with discussion link' do
     person = Factory(:person)
     login_as(person)
-    presentation =  {title: 'Presentation', project_ids: [person.projects.first.id], asset_links_attributes:{url: "http://www.slack.com/",link_type: AssetLink::DISCUSSION}}
+    presentation =  {title: 'Presentation', project_ids: [person.projects.first.id], discussion_links_attributes:[{url: "http://www.slack.com/"}]}
     assert_difference('AssetLink.discussion.count') do
       assert_difference('Presentation.count') do
         assert_difference('ContentBlob.count') do
@@ -533,35 +535,52 @@ class PresentationsControllerTest < ActionController::TestCase
 
   test 'should show discussion link' do
     asset_link = Factory(:discussion_link)
-    presentation = Factory(:presentation, asset_links: [asset_link], policy: Factory(:public_policy, access_type: Policy::VISIBLE))
+    presentation = Factory(:presentation, discussion_links: [asset_link], policy: Factory(:public_policy, access_type: Policy::VISIBLE))
     get :show, params: { id: presentation }
     assert_response :success
     assert_select 'div.panel-heading', text: /Discussion Channel/, count: 1
   end
 
-  test 'should update presentation with discussion link' do
+  test 'should update presentation with new discussion link' do
     person = Factory(:person)
     presentation = Factory(:presentation, contributor: person)
     login_as(person)
     assert_nil presentation.discussion_links.first
     assert_difference('AssetLink.discussion.count') do
       assert_difference('ActivityLog.count') do
-        put :update, params: { id: presentation.id, presentation: { asset_links_attributes:{url: "http://www.slack.com/",link_type: AssetLink::DISCUSSION} }  }
+        put :update, params: { id: presentation.id, presentation: { discussion_links_attributes:[{url: "http://www.slack.com/"}] }  }
       end
     end
-    assert_redirected_to presentation_path(assigns(:presentation))
+    assert_redirected_to presentation_path(presentation = assigns(:presentation))
     assert_equal 'http://www.slack.com/', presentation.discussion_links.first.url
   end
 
-  test 'should destroy related assetlink when the discussion link is removed ' do
+  test 'should update sop with edited discussion link' do
+    person = Factory(:person)
+    presentation = Factory(:presentation, contributor: person, discussion_links:[Factory(:discussion_link)])
+    login_as(person)
+    assert_equal 1,presentation.discussion_links.count
+    assert_no_difference('AssetLink.discussion.count') do
+      assert_difference('ActivityLog.count') do
+        put :update, params: { id: presentation.id, presentation: { discussion_links_attributes:[{id:presentation.discussion_links.first.id, url: "http://www.wibble.com/"}] } }
+      end
+    end
+    presentation = assigns(:presentation)
+    assert_redirected_to presentation_path(presentation)
+    assert_equal 1,presentation.discussion_links.count
+    assert_equal 'http://www.wibble.com/', presentation.discussion_links.first.url
+  end
+
+  test 'should destroy related asset link when the discussion link is removed ' do
     person = Factory(:person)
     login_as(person)
     asset_link = Factory(:discussion_link)
-    presentation = Factory(:presentation , asset_links: [asset_link], policy: Factory(:public_policy, access_type: Policy::VISIBLE), contributor: person)
+    presentation = Factory(:presentation , discussion_links: [asset_link], policy: Factory(:public_policy, access_type: Policy::VISIBLE), contributor: person)
     assert_difference('AssetLink.discussion.count', -1) do
-      put :update, params: { id: presentation.id, presentation: { asset_links_attributes:{url: "",link_type: AssetLink::DISCUSSION} } }
+      put :update, params: { id: presentation.id, presentation: { discussion_links_attributes:[{id:asset_link.id, _destroy:'1'}] } }
     end
-    assert_redirected_to presentation_path(assigns(:presentation ))
+    assert_redirected_to presentation_path(presentation = assigns(:presentation ))
+    assert_empty presentation.discussion_links
   end
 
   def edit_max_object(presentation)
