@@ -165,7 +165,9 @@ class ProjectsController < ApplicationController
   def create
     @project = Project.new
     @project.assign_attributes(project_params)
-    @project.build_default_policy.set_attributes_with_sharing(params[:policy_attributes]) if params[:policy_attributes]
+    @project.default_policy = Policy.projects_policy([@project])
+    @project.use_default_policy = true
+    @project.default_policy.set_attributes_with_sharing(params[:policy_attributes]) if params[:policy_attributes]
 
     respond_to do |format|
       if @project.save

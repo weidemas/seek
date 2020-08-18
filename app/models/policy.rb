@@ -446,4 +446,5 @@ class Policy < ApplicationRecord
     items |= Project.where(default_policy_id: id)
     items.flatten.compact.uniq
   end
-end
+
+ end
