@@ -189,6 +189,7 @@ sorting:
 results_per_page_default:
   convert: :to_i
 results_per_page:
+project_creation_simplified:
 # Omniauth
 omniauth_enabled:
 omniauth_user_create:

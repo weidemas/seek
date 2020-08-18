@@ -39,7 +39,7 @@ def load_seek_testing_defaults!
       Settings.defaults[:programme_user_creation_enabled] = true
       Settings.defaults[:project_hierarchy_enabled] = true
       Settings.defaults[:tabs_lazy_load_enabled] = false
-
+      Settings.defaults[:project_creation_simplified] = true
       Settings.defaults[:project_link] = 'http://www.sysmo.net'
       Settings.defaults[:application_name] = 'Sysmo SEEK'
       Settings.defaults[:dm_project_name] = "SysMO-DB"
