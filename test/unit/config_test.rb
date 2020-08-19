@@ -169,13 +169,13 @@ class ConfigTest < ActiveSupport::TestCase
     assert_equal '', Seek::Config.exception_notification_recipients
   end
 
-  test 'hide_details_enabled' do
-    assert !Seek::Config.hide_details_enabled
-  end
+  # test 'hide_details_enabled' do
+  #   assert !Seek::Config.hide_details_enabled
+  # end
 
-  test 'activation_required_enabled' do
-    assert !Seek::Config.activation_required_enabled
-  end
+  # test 'activation_required_enabled' do
+  #   assert !Seek::Config.activation_required_enabled
+  # end
   test 'google_analytics_enabled' do
     assert !Seek::Config.google_analytics_enabled
   end
