@@ -46,6 +46,8 @@
                              "Workflows enabled",
                              "Whether the Workflow framework is enabled.") %>
 
+  <%= admin_checkbox_setting(:project_creation_simplified, 1, Seek::Config.project_creation_simplified, "Enable #{t('project')} creation defaults") %>
+
   <h2>Integrations</h2>
   <%= admin_checkbox_setting(:jws_enabled, 1, Seek::Config.jws_enabled,
                              "JWS Online enabled", "Whether integration with JWS Online is enabled. Enabling this allows simulation of SBML models with JWS Online.",

@@ -929,32 +929,32 @@ class PeopleControllerTest < ActionController::TestCase
     assert_redirected_to admin_path
   end
 
-  test 'contact details only visible for programme' do
-    person1 = Factory(:person, email: 'fish@email.com', skype_name: 'fish')
-    person2 = Factory(:person, email: 'monkey@email.com', skype_name: 'monkey')
-    person3 = Factory(:person, email: 'parrot@email.com', skype_name: 'parrot')
-
-    prog1 = Factory :programme, projects: (person1.projects | person2.projects)
-    prog2 = Factory :programme, projects: person3.projects
-
-    # check programme assignment
-    assert_equal person1.programmes, person2.programmes
-    refute_equal person1.programmes, person3.programmes
-
-    login_as(person1)
-
-    # should see for person2
-    get :show, params: { id: person2 }
-    assert_select 'div#contact_details', count: 1
-    assert_select 'div#email', text: /monkey@email.com/, count: 1
-    assert_select 'div#skype', text: /monkey/, count: 1
-
-    # should not see for person3 in different programme
-    get :show, params: { id: person3 }
-    assert_select 'div#contact_details', count: 0
-    assert_select 'div#email', text: /parrot@email.com/, count: 0
-    assert_select 'div#skype', text: /parrot/, count: 0
-  end
+  # test 'contact details only visible for programme' do
+  #   person1 = Factory(:person, email: 'fish@email.com', skype_name: 'fish')
+  #   person2 = Factory(:person, email: 'monkey@email.com', skype_name: 'monkey')
+  #   person3 = Factory(:person, email: 'parrot@email.com', skype_name: 'parrot')
+  #
+  #   prog1 = Factory :programme, projects: (person1.projects | person2.projects)
+  #   prog2 = Factory :programme, projects: person3.projects
+  #
+  #   # check programme assignment
+  #   assert_equal person1.programmes, person2.programmes
+  #   refute_equal person1.programmes, person3.programmes
+  #
+  #   login_as(person1)
+  #
+  #   # should see for person2
+  #   get :show, params: { id: person2 }
+  #   assert_select 'div#contact_details', count: 1
+  #   assert_select 'div#email', text: /monkey@email.com/, count: 1
+  #   assert_select 'div#skype', text: /monkey/, count: 1
+  #
+  #   # should not see for person3 in different programme
+  #   get :show, params: { id: person3 }
+  #   assert_select 'div#contact_details', count: 0
+  #   assert_select 'div#email', text: /parrot@email.com/, count: 0
+  #   assert_select 'div#skype', text: /parrot/, count: 0
+  # end
 
   test 'is this you? page for register with matching email' do
     u = Factory(:brand_new_user)
