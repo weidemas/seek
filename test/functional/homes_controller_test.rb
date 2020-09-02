@@ -93,14 +93,14 @@ class HomesControllerTest < ActionController::TestCase
       get :index
       assert_select '#browse-menu li>a[href=?]', '/sops', text: 'Protocols', count: 1
     end
-    as_not_virtualliver do
-      get :index
-      assert_select '#browse-menu' do
-        assert_select 'li' do
-          assert_select 'a[href=?]', sops_path, text: 'SOPs'
-        end
-      end
-    end
+#    as_not_virtualliver do
+#      get :index
+#      assert_select '#browse-menu' do
+#        assert_select 'li' do
+#          assert_select 'a[href=?]', sops_path, text: 'SOPs'
+#        end
+#      end
+#    end
   end
 
   test 'SOP upload option should be capitalized' do
