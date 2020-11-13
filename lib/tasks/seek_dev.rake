@@ -417,10 +417,7 @@ namespace :seek_dev do
     end
 
     unless CustomMetadataType.where(supported_type: 'Assay').any?
-      cmt = CustomMetadataType.new(title: 'test Assay metadata', supported_type:'Assay')
-      cmt.custom_metadata_attributes << CustomMetadataAttribute.new(title: 'age', sample_attribute_type: SampleAttributeType.where(title:'Integer').first)
-      cmt.custom_metadata_attributes << CustomMetadataAttribute.new(title: 'name', required:true, sample_attribute_type: SampleAttributeType.where(title:'String').first)
-      cmt.custom_metadata_attributes << CustomMetadataAttribute.new(title: 'date', sample_attribute_type: SampleAttributeType.where(title:'Date time').first)
+      cmt.custom_metadata_attributes << CustomMetadataAttribute.new(title: 'level', required:true, sample_attribute_type: SampleAttributeType.where(title:'String').first)
       cmt.save!
       puts "Created test CMT for Assay"
     else
