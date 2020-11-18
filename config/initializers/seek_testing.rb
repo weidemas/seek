@@ -95,7 +95,7 @@ def load_seek_testing_defaults!
       Settings.defaults[:hard_max_cachable_size] = 50000
 
       Settings.defaults[:orcid_required] = false
-      Settings.defaults[:site_base_host] = "http://localhost:3000"
+      Settings.defaults[:site_base_host] = "http://localhost:3000/seek/"
       Settings.defaults[:session_store_timeout] = 30.minutes
 
       Settings.defaults[:default_all_visitors_access_type] = Policy::NO_ACCESS
