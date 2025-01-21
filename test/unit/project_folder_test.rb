@@ -146,7 +146,7 @@ class ProjectFolderTest < ActiveSupport::TestCase
     default_file = File.join Rails.root, 'test', 'fixtures', 'files', 'default_project_folders'
 
     root_folders = nil
-    assert_difference('ProjectFolder.count', 7) do
+    assert_difference('ProjectFolder.count', 8) do
       root_folders = ProjectFolder.initialize_default_folders project, default_file
     end
 
@@ -165,12 +165,13 @@ class ProjectFolderTest < ActiveSupport::TestCase
     assert second_root.editable?
     assert !second_root.incoming?
     assert !second_root.deletable?
-    assert_equal 2, second_root.children.count
+    assert_equal 3, second_root.children.count
     assert_equal 'copasi', second_root.children.first.title
-    assert_equal 'sbml', second_root.children[1].title
+    assert_equal 'morpheus', second_root.children[1].title
+    assert_equal 'sbml', second_root.children.third.title
 
-    assert_equal 1, second_root.children[1].children.count
-    assert_equal 'in development', second_root.children[1].children.first.title
+    assert_equal 1, second_root.children.third.children.count
+    assert_equal 'in development', second_root.children.third.children.first.title
 
     third_root = root_folders[2]
     assert !third_root.editable?

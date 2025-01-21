@@ -1,6 +1,6 @@
 model:
   title: "models"
-  children: sbml, copasi
+  children: sbml, copasi, morpheus
   deletable: false
 
 sbml:
@@ -25,3 +25,5 @@ locked:
   editable: false
   incoming: true
 
+morpheus:
+  title: "morpheus"

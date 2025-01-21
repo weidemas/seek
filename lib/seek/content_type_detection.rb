@@ -107,6 +107,10 @@ module Seek
       check_content blob, '<copasi'
     end
 
+    def is_morpheus?(blob = self)
+      check_content blob, '<sbml'
+    end
+
     def is_xgmml?(blob = self)
       check_content(blob, '<graph') && check_content(blob, '<node')
     end
